@@ -1,24 +1,19 @@
+#ifndef UNP_H
 #include "unp.h"
+#endif
+#include "fs.h"
 #include <netinet/tcp.h>
 
-#define CODE_UPLOAD '0'
-#define CODE_DOWNLOAD '1'
-#define CODE_DISPLAY_FILE_LIST '2'
-#define CODE_DELETE '3'
-#define CODE_ERR '4'
-
-#define HOST_IP "127.0.0.1"
-
+#define DEFAULT_HOST_IP "127.0.0.1"
 #define OPT_UPLOAD 0
 #define OPT_DOWNLOAD 1
 #define OPT_LIST_FILE 2
 #define OPT_REMOVE 3
 #define OPT_HELP 4
-
 #define OPT_NUM 5
+
 #define PROGRAM_NAME fs_cli
 
-#define DEFAULT_DOWNLOAD_PATH "download/"
 
 struct opt_info {
     char opt[5];
@@ -62,6 +57,13 @@ void list(int sockfd);
  */
 void remove_f(char *code, int sockfd);
 
+/**
+ * 确保目录存在，不存在则创建
+ * @param dirPath
+ * @return -1 表示不存在并且创建失败， 0表示存在或不存在但创建成功
+ */
+int ensureDirectory(char* dirPath);
+
 int main(int argc, char **argv) {
     if (argc < 2)
         err_quit("usage: ./fs_cli -h (to get the use instruction)");
@@ -74,7 +76,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    //如果输入的参数无效，则之间退出并提示调用help展示帮助
+    //如果输入的参数无效，则直接退出并提示调用help展示帮助
     if (opt == -1)
         err_quit("params error, usage: ./fs_cli -h (to get the use instruction)");
 
@@ -86,8 +88,8 @@ int main(int argc, char **argv) {
     bzero(&servaddr, sizeof(servaddr));
 
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(9748);
-    Inet_pton(AF_INET, HOST_IP, &servaddr.sin_addr);
+    servaddr.sin_port = htons(FILE_SYSTEM_PORT);
+    Inet_pton(AF_INET, DEFAULT_HOST_IP, &servaddr.sin_addr);
 
     if (opt == OPT_HELP) {
         help();
@@ -129,30 +131,7 @@ void help() {
     }
 }
 
-/**
- * 向指定的已连接的socket描述符，发送一个字符串
- */
-void sendString(int sockfd, char *msg, char *buf) {
-    strcpy(buf, msg);
-    Writen(sockfd, buf, strlen(buf));
-}
 
-char *getFileType(char *filepath, char *savebuf) {
-    int start = 0;
-    int end = strlen(filepath);
-    for (int i = end - 1; i >= 0; i--) {
-        if (filepath[i] == '\\' || filepath[i] == '/') {
-            start = i + 1;
-            break;
-        }
-    }
-    int j = 0;
-    for (int i = start; i < end; i++, j++) {
-        savebuf[j] = filepath[i];
-    }
-    savebuf[j] = '\0';
-    return savebuf;
-}
 
 /**
  * 上传文件
@@ -201,6 +180,10 @@ void download(char *code, int sockfd) {
         sendString(sockfd, "nothing\n", sendbuf);
         //关闭写一端
         Shutdown(sockfd, SHUT_WR);
+
+        //如果下载目录不存在，则先创建
+        ensureDirectory(DEFAULT_DOWNLOAD_PATH);
+
         if(state_code == CODE_ERR){    //文件不存在，提取码无效
             printf("File not exists or code is not available. Please try again!");
         } else {
@@ -255,9 +238,3 @@ void remove_f(char *code, int sockfd) {
     }
 }
 
-void sendWithCode(int sockfd, char *msg, char *code, char *buf) {
-    strcpy(buf, msg);
-    strcat(buf, code);
-    //int size = strlen(msg) + strlen(code);
-    Writen(sockfd, buf, strlen(buf));
-}   

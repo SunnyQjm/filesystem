@@ -4,19 +4,22 @@
 #include <string.h>
 #endif
 
+/*引入该头文件用于显示一个文件夹下面的文件信息*/
 #include <dirent.h>
 
-#define CODE_LENGTH 4
-#define MAX_DATA_LEN 30
+#define CODE_LENGTH 4                   /*提取码长度*/
+#define MAX_DATA_LEN 30                 /*节点数据域的长度*/
 
 #ifndef DEFAULT_SAVE_PATH
-#define DEFAULT_SAVE_PATH "files/"
+#ifndef DEFAULT_SAVE_PATH               /*默认保存上传文件的目录*/
+#define DEFAULT_SAVE_PATH "upload/"
+#endif
 #endif
 
 struct Node {
-    char code[CODE_LENGTH];
-    struct Node *next;
-    char data[MAX_DATA_LEN];
+    char code[CODE_LENGTH];             /*提取码*/
+    struct Node *next;                  /*指向下一个节点*/
+    char data[MAX_DATA_LEN];            /*节点数据域*/
 };
 
 #define Node struct Node
@@ -30,20 +33,13 @@ struct Node {
 Node *insert(Node *list, char *code, char *fileName);
 
 /**
- * 删除一个节点，成功后返回删除以后的头结点
- * @param list
- * @param code
- * @param deleteFileFunc
- * @return
- */
-/**
  * 简单打印链表的信息
  * @param list
  */
 void easyList(Node *list);
 
 /**
- * 删除节点
+ * 删除一个节点，成功后返回删除以后的头结点
  * @param list
  * @param code
  * @param deleteFileFunc        指向删除文件函数
@@ -74,9 +70,17 @@ Node *init(Node *list, char *dirPath);
 
 
 /**
- * 通过提取码在链表中检索，入股存在，则返回目标节点，否则返回NULL
+ * 通过提取码在链表中检索，如果存在，则返回目标节点，否则返回NULL
  * @param list
  * @param code
  * @return
  */
 Node* searchByCode(Node* list, char* code);
+
+/**
+ * 通过文件名在文件链表中检索，如果存在，则返回目标节点，否则返回NULL
+ * @param list
+ * @param fileName
+ * @return
+ */
+Node* searchByFileName(Node* list, char* fileName);

@@ -1,25 +1,21 @@
+#ifndef UNP_H
 #include "unp.h"
+#endif
+
+#include "fs.h"
 #include "unpthread.h"
 
 #define BASE_HEAD
 #include "list.h"
 #include "rand.h"
 
-#define CODE_UPLOAD '0'
-#define CODE_DOWNLOAD '1'
-#define CODE_DISPLAY_FILE_LIST '2'
-#define CODE_DELETE '3'
-#define CODE_ERR '4'
-
 #define MAX_SAVE_PATH_LEN 100
-#ifndef DEFAULT_SAVE_PATH
-#define DEFAULT_SAVE_PATH "files/"
-#endif
-
 
 void *deal(void *arg);
 
 void sendWithCode(int sockfd, char *msg, char *code, char *buf);
+
+int ensureDirectory(char* dirPath);
 
 Node* list = NULL;
 
@@ -38,7 +34,7 @@ int main(int argc, char **argv) {
 
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(9748);
+    servaddr.sin_port = htons(FILE_SYSTEM_PORT);
 
     Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
 
@@ -50,20 +46,6 @@ int main(int argc, char **argv) {
     }
 }
 
-
-void sendWithCode(int sockfd, char *msg, char *code, char *buf) {
-    strcpy(buf, msg);
-    strcat(buf, code);
-    //int size = strlen(msg) + strlen(code);
-    Writen(sockfd, buf, strlen(buf));
-}
-/**
- * 向指定的已连接的socket描述符，发送一个字符串
- */
-void sendString(int sockfd, char* msg, char* buf){
-    strcpy(buf, msg);
-    Writen(sockfd, buf, strlen(buf));
-}
 
 /**
  * 处理上传
@@ -78,6 +60,9 @@ void dealUpload(int connfd, char *recvbuf, char *extra) {
     char fileName[MAX_SAVE_PATH_LEN];
 
     rand_code(randCode);
+
+    //确保保存上传文件的文件夹存在
+    ensureDirectory(DEFAULT_SAVE_PATH);
     strcpy(savePath, DEFAULT_SAVE_PATH);
     strcat(savePath, randCode);
     strcat(savePath, "-");
@@ -138,7 +123,15 @@ void dealDelete(int connfd, char* recvbuf){
  */
 void dealDownload(int connfd, char* recvbuf){
     int n = 0;
+
+    //通过提取码检索
     Node* node = searchByCode(list, recvbuf);
+
+    //如果通过提取码检索不到，可能是通过文件名下载，尝试用文件名来检索
+    if(node == NULL){
+        node = searchByFileName(list, recvbuf);
+    }
+
     if(node == NULL){   //如果链表中没有检测到结果，则表示该提取码无效
         sendString(connfd, "The code is not available4\n", recvbuf);
     } else {

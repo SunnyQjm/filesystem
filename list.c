@@ -92,7 +92,13 @@ void freeAll(Node *list) {
 }
 
 int deleteFile(char *filePath) {
-    return remove(filePath);
+    int result = remove(filePath);
+    if(result == 0){
+        printf("删除文件“%s”成功!\n", filePath);
+    } else {
+        printf("删除文件“%s”失败!\n", filePath);
+    }
+    return result;
 }
 
 /**
@@ -129,6 +135,15 @@ Node* searchByCode(Node* list, char* code){
         list = list->next;
     }
     return NULL;
+}
+
+Node* searchByFileName(Node* list, char* fileName){
+    while (list != NULL){
+        if(strcmp(list->data, fileName) == 0){
+            return list;
+        }
+        list = list->next;
+    }
 }
 
 //int main() {
