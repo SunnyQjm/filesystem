@@ -3,6 +3,7 @@
 #endif
 #include "fs.h"
 #include <netinet/tcp.h>
+#include <stdlib.h>
 
 #define DEFAULT_HOST_IP "211.159.152.15"
 #define OPT_UPLOAD 0
@@ -14,6 +15,12 @@
 
 #define PROGRAM_NAME fs_cli
 
+struct addr{
+    int port;
+    char ip[20];
+} addr = {
+    FILE_SYSTEM_PORT, DEFAULT_HOST_IP
+};
 
 struct opt_info {
     char opt[5];
@@ -64,6 +71,9 @@ void remove_f(char *code, int sockfd);
  */
 int ensureDirectory(char* dirPath);
 
+
+void initAddr(struct addr*, char*);
+
 int main(int argc, char **argv) {
     if (argc < 2)
         err_quit("usage: ./fs_cli -h (to get the use instruction)");
@@ -80,6 +90,9 @@ int main(int argc, char **argv) {
     if (opt == -1)
         err_quit("params error, usage: ./fs_cli -h (to get the use instruction)");
 
+    //通过配置文件初始化ip和端口
+    initAddr(&addr, "config.txt");
+
     //Socket 文件描述符
     int sockfd;
     struct sockaddr_in servaddr;
@@ -88,8 +101,8 @@ int main(int argc, char **argv) {
     bzero(&servaddr, sizeof(servaddr));
 
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(FILE_SYSTEM_PORT);
-    Inet_pton(AF_INET, DEFAULT_HOST_IP, &servaddr.sin_addr);
+    servaddr.sin_port = htons(addr.port);
+    Inet_pton(AF_INET, addr.ip, &servaddr.sin_addr);
 
     if (opt == OPT_HELP) {
         help();
@@ -238,3 +251,21 @@ void remove_f(char *code, int sockfd) {
     }
 }
 
+void initAddr(struct addr* m_addr, char* configPath){
+    if(access(configPath, F_OK) == 0 && m_addr != NULL){  //指定的配置文件路径有效，则读取配置好文件
+        FILE* fp = fopen(configPath, "r");
+        char buffer[1024];
+        char* temp;
+        while(fgets(buffer, 1024, fp) != NULL){
+            if((temp = strstr(buffer, "ip")) != NULL){
+                temp[strlen(temp) - 1] = '\0';
+                strcpy(m_addr->ip, temp + 3);
+                printf("IP: %s\n", temp + 3);
+            } else if((temp = strstr(buffer, "port")) != NULL){
+                temp[strlen(temp) - 1] = '\0';
+                m_addr->port = atoi(temp + 5);
+                printf("PORT: %s\n", temp + 5);
+            }
+        }
+    }
+}
