@@ -21,7 +21,7 @@
 
 * 客户端程序的可选项
 
-  * -d <code\filename>    下载 
+  * -d <code/filename\>下载 
   * -u <文件路径\> 上传
   * -r <code\>    删除
   * -l           显示文件列表
