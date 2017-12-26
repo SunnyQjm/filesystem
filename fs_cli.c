@@ -4,7 +4,7 @@
 #include "fs.h"
 #include <netinet/tcp.h>
 
-#define DEFAULT_HOST_IP "127.0.0.1"
+#define DEFAULT_HOST_IP "211.159.152.15"
 #define OPT_UPLOAD 0
 #define OPT_DOWNLOAD 1
 #define OPT_LIST_FILE 2
